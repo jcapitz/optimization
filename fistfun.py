@@ -2,26 +2,56 @@
 
 import numpy as np
 
-def t_update(tp):
+def prox(z,alpha,dt):
     """
-    This function produces t-updates
+    Function implements the PROXIMAL solution 
     arguments:
-       tp: the previous value of t
+       z:     array of dimension (p,)
+       alpha: parameter scalar
+       dt:    time step, a scalar
     returns:
-       tn: updated value of t
+       w:     vector with estimater parameters, dimension (p,)
     """
-    tn = (1 + np.sqrt(1 + 4 * tp**2))/2
-    return tn
+    gamma = 2 * dt * (1 - alpha) + 1
+    w = ((z - alpha * dt) / gamma) * (z > alpha * dt) + ((z + alpha * dt) / gamma) *  (z < - alpha * dt)
+    return w
 
-def v_update():
+def loss(X,y,w):
+    """
+    Logistic loss function:
+    arguments:
+        w: numpy array of feature coefficients with shape (p,)
+        X: numpy array with shape (n,p)
+        y: numpy array of responses with shape (n,)
+    returns:
+        l: loss function value, a scalar    
+    """
+    n = X.shape[0]
+    e = 1 + np.exp(-np.dot(X,w))
+    l = ( (1 - y) * np.dot(X,w) + np.log(e) ) / n
+    return np.sum(l)
+
+def linesearch(X,y,dt,p,w,alpha,lam):
     """
     """
-    vn = wn + (wn - wp) * (tp - 1)/tn
-    return vn
+    w_new = prox((w - dt*p),alpha,dt)
+    
+    while True:
+        grad = log_gradient(w,X,y)
+        q = loss(X,y,p,lam) + np.dot(w-p,grad) + np.dot(w-p,w-p)/(2*dt)
+        if q >= loss(X,y,w_new,lam):
+            dt = 1.1 *dt
+            w = w_new
+            if dt < 1e-12: raise ValueError('dt is too small')
+            break
 
+        else:
+            dt = dt/2
+            if dt < 1e-12: raise ValueError('dt is too small')
 
+    return dt,w
 
-def logloss_gradient(w,X,y):
+def log_gradient(X,y,w):
     """
     Calculates gradient of the logistic loss;
     arguments:
@@ -32,7 +62,6 @@ def logloss_gradient(w,X,y):
         g: numpy array containing gradient values with shape (p,)
     """
     n = X.shape[0]
-    z = np.dot(X,w)
-    p = 1/(1 + np.exp(-z))
-    g = np.dot((p - y),X)/n
+    p = 1 / ( 1 + np.exp(-np.dot(X,w)) )
+    g = np.dot((p - y),X) / n
     return g
