@@ -35,20 +35,20 @@ def linesearch(X,y,dt,p,w,alpha,lam):
     """
     """
     w_new = prox((w - dt*p),alpha,dt)
-    
     while True:
         grad = log_gradient(w,X,y)
         q = loss(X,y,p,lam) + np.dot(w-p,grad) + np.dot(w-p,w-p)/(2*dt)
         if q >= loss(X,y,w_new,lam):
             dt = 1.1 *dt
             w = w_new
-            if dt < 1e-12: raise ValueError('dt is too small')
-            break
-
+            flag = 1
         else:
             dt = dt/2
-            if dt < 1e-12: raise ValueError('dt is too small')
-
+        if dt < 1e-12: 
+            print 'dt is too small'
+            break
+        elif flag == 1:
+            break
     return dt,w
 
 def log_gradient(X,y,w):
